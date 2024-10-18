@@ -4,129 +4,150 @@ CREATE DATABASE IF NOT EXISTS olakehace;
 -- Cambiar a la base de datos 'olakehace'
 USE olakehace;
 
--- Instrucciones de creación de tablas y relaciones
+-- Limpiar tablas existentes en dado caso se vuelva a correr el script
+DROP TABLE IF EXISTS reports;
+DROP TABLE IF EXISTS notifications;
+DROP TABLE IF EXISTS notification_types;
+DROP TABLE IF EXISTS attendances;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS post_statuses;
+DROP TABLE IF EXISTS post_categories;
+DROP TABLE IF EXISTS app_users;
+DROP TABLE IF EXISTS user_statuses;
+DROP TABLE IF EXISTS roles;
 
--- Roles
+-- Tabla de Roles
 CREATE TABLE roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) UNIQUE,
-    created_at TIMESTAMP
+    name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- Estados de usuarios
+-- Tabla de Estados de Usuarios
 CREATE TABLE user_statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    status_name VARCHAR(50) UNIQUE
+    status_name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- Usuarios
-CREATE TABLE users (
+-- Tabla de Usuarios
+CREATE TABLE app_users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    role_id INT,
-    status_id INT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role_id INT NOT NULL,
+    status_id INT NOT NULL,
     post_aprvd INT DEFAULT 0,
-    created_at TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES roles(id),
     FOREIGN KEY (status_id) REFERENCES user_statuses(id)
 );
 
--- Categorías de publicaciones
+-- Tabla de Categorias de Publicaciones
 CREATE TABLE post_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100),
-    created_at TIMESTAMP
+    name VARCHAR(100) UNIQUE NOT NULL
 );
 
--- Estados de publicaciones
+-- Tabla de Estados de Publicaciones
 CREATE TABLE post_statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    status_name VARCHAR(50) UNIQUE
+    status_name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- Publicaciones
+-- Tabla de Publicaciones
 CREATE TABLE posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    category_id INT,
-    title VARCHAR(255),
-    description TEXT,
-    status_id INT,
+    user_id INT NOT NULL,
+    category_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    status_id INT NOT NULL,
     reports_count INT DEFAULT 0,
-    created_at TIMESTAMP,
     FOREIGN KEY (category_id) REFERENCES post_categories(id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (user_id) REFERENCES app_users(id),
     FOREIGN KEY (status_id) REFERENCES post_statuses(id)
 );
 
--- Eventos
+-- Tabla de Eventos
 CREATE TABLE events (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    post_id INT,
-    event_date DATE,
-    event_time TIME,
-    location VARCHAR(255),
-    capacity INT,
-    audience_type VARCHAR(100),
+    post_id INT NOT NULL,
+    event_date DATE NOT NULL,
+    event_time TIME NOT NULL,
+    location VARCHAR(255) NOT NULL,
+    capacity INT NOT NULL,
+    audience_type VARCHAR(100) NOT NULL,
     url VARCHAR(255),
-    created_at TIMESTAMP,
-    FOREIGN KEY (post_id) REFERENCES posts(id)
+    image_path VARCHAR(255),
+    status_id INT NOT NULL DEFAULT 1,
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    FOREIGN KEY (status_id) REFERENCES post_statuses(id)
 );
 
--- Asistencias
+-- Tabla de Asistencias
 CREATE TABLE attendances (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    event_id INT,
-    created_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    user_id INT NOT NULL,
+    event_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES app_users(id),
     FOREIGN KEY (event_id) REFERENCES events(id)
 );
 
--- Notificaciones
+-- Tabla de Tipos de Notificaciones
 CREATE TABLE notification_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    type_name VARCHAR(50) UNIQUE
+    type_name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- Notificaciones
+-- Tabla de Notificaciones
 CREATE TABLE notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    post_id INT,
-    type_id INT,
-    notification_message TEXT,
+    user_id INT NOT NULL,
+    post_id INT NOT NULL,
+    type_id INT NOT NULL,
+    notification_message TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (user_id) REFERENCES app_users(id),
     FOREIGN KEY (post_id) REFERENCES posts(id),
     FOREIGN KEY (type_id) REFERENCES notification_types(id)
 );
 
-
--- Reportes
+-- Tabla de Reportes
 CREATE TABLE reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    post_id INT,
-    reason TEXT,
-    created_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    user_id INT NOT NULL,
+    post_id INT NOT NULL,
+    reason TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES app_users(id),
     FOREIGN KEY (post_id) REFERENCES posts(id)
 );
 
--- Ejemplo de inserts (opcional)
-
 -- Insertar roles iniciales
-INSERT INTO roles (name, created_at) VALUES ('Admin', NOW()), ('Publicador', NOW()), ('Registrado', NOW());
+INSERT INTO roles (name) VALUES
+('Admin'),
+('Publicador'),
+('Registrado');
 
 -- Insertar estados de usuarios
-INSERT INTO user_statuses (status_name) VALUES ('Activo'), ('Suspendido'), ('Inactivo');
+INSERT INTO user_statuses (status_name) VALUES
+('Activo'),
+('Suspendido'),
+('Inactivo');
 
+-- Insertar estados de publicaciones
+INSERT INTO post_statuses (status_name) VALUES
+('Publicado'),
+('Oculto'),
+('Baneado');
 
--- Trigger para actualizar el contador de reportes
+-- Insertar categorías de publicaciones
+INSERT INTO post_categories (name) VALUES
+('Concierto'),
+('Conferencia'),
+('Deporte'),
+('Festival');
+
+-- Trigger para actualizar el contador de reportes al insertar un nuevo reporte
 DELIMITER //
 
 CREATE TRIGGER update_reports_count
@@ -140,6 +161,7 @@ END //
 
 DELIMITER ;
 
+-- Trigger para decrementar el contador de reportes al eliminar un reporte
 DELIMITER //
 
 CREATE TRIGGER decrement_reports_count
@@ -153,9 +175,86 @@ END //
 
 DELIMITER ;
 
+-- Trigger para setear una publicacion como "Oculata" cuando tenga más de 3 reportes
+DELIMITER //
+DROP TRIGGER IF EXISTS ban_post_if_reported;
+CREATE TRIGGER ban_post_if_reported
+AFTER INSERT ON reports
+FOR EACH ROW
+BEGIN
+    DECLARE report_count INT;
+
+    -- Obtener el numero de reportes de la publicación
+    SELECT reports_count INTO report_count
+    FROM posts
+    WHERE id = NEW.post_id;
+
+    IF report_count > 3 THEN
+        -- Actualizar el status_id de la publicacion a "Oculta" (status_id = 3)
+        UPDATE posts
+        SET status_id = 3
+        WHERE id = NEW.post_id;
+
+        -- Actualizar el status_id del evento relacionado
+        UPDATE events
+        SET status_id = 3
+        WHERE post_id = NEW.post_id;
+    END IF;
+END //
+
+DELIMITER ;
+
+
 -- Vista para visualizar publicaciones reportadas
-CREATE VIEW reported_posts AS
-SELECT p.id AS post_id, p.title, p.description, p.reports_count, u.name AS posted_by
-FROM posts p
-JOIN users u ON p.user_id = u.id
-WHERE p.reports_count > 0;
+CREATE OR REPLACE VIEW reported_posts AS
+SELECT
+    p.id AS post_id,
+    p.title,
+    p.description,
+    p.reports_count,
+    u.name AS posted_by
+FROM
+    posts p
+JOIN
+    app_users u ON p.user_id = u.id -- Cambiado a app_users
+WHERE
+    p.reports_count > 0;
+
+-- Procedimiento almacenado para obtener eventos próximos
+DELIMITER //
+
+CREATE PROCEDURE get_upcoming_events()
+BEGIN
+    SELECT
+        e.id,
+        p.title,
+        p.description,
+        e.event_date,
+        e.event_time,
+        e.location,
+        e.image_path
+    FROM
+        events e
+    JOIN
+        posts p ON e.post_id = p.id
+    WHERE
+        e.event_date >= CURDATE()
+    ORDER BY
+        e.event_date ASC;
+END //
+
+DELIMITER ;
+
+-- Ejemplo de inserts para fines de pruebas unitarias
+INSERT INTO app_users (name, email, password, role_id, status_id) VALUES
+('Marco Munguia', 'marco.munguia@example.com', 'hashed_password', 2, 1),
+('Pancho Pistolas', 'pancho.pistolas@example.com', 'hashed_password', 3, 1);
+
+INSERT INTO posts (user_id, category_id, title, description, status_id) VALUES
+(1, 1, 'Festival de Musica', 'Un gran festival con artistas internacionales.', 1),
+(2, 2, 'Conferencia de Tecnologia', 'Aprende sobre las ultimas tendencias en tecnologia.', 1);
+
+INSERT INTO events (post_id, event_date, event_time, location, capacity, audience_type, url, image_path) VALUES
+(1, '2024-11-20', '18:00:00', 'Parque Central', 5000, 'Publico General', 'http://festivalmusica.com', 'event-images/eventoejemplouno.png'),
+(2, '2024-12-05', '09:00:00', 'Centro de Convenciones', 300, 'Profesionales', 'http://techtalks.com', 'event-images/eventoejemplodos.png');
+

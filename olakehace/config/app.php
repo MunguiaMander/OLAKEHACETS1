@@ -12,7 +12,7 @@ return [
     | other UI elements where an application name needs to be displayed.
     |
     */
-
+    'logo_path' => 'site-images/olakehacelogo.png',  // Ruta relativa a 'storage/app/public/site-logos'
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
