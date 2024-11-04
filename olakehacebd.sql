@@ -4,33 +4,37 @@ CREATE DATABASE IF NOT EXISTS olakehace;
 -- Cambiar a la base de datos 'olakehace'
 USE olakehace;
 
--- Limpiar tablas existentes en dado caso se vuelva a correr el script
-DROP TABLE IF EXISTS reports;
-DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS notification_types;
-DROP TABLE IF EXISTS attendances;
-DROP TABLE IF EXISTS events;
-DROP TABLE IF EXISTS posts;
-DROP TABLE IF EXISTS post_statuses;
-DROP TABLE IF EXISTS post_categories;
-DROP TABLE IF EXISTS app_users;
-DROP TABLE IF EXISTS user_statuses;
-DROP TABLE IF EXISTS roles;
+-- Limpiar tablas existentes en dado caso se vuelva a correr el script y restablecer el AUTO_INCREMENT
+SET FOREIGN_KEY_CHECKS = 0;
+
+TRUNCATE TABLE reports;
+TRUNCATE TABLE notifications;
+TRUNCATE TABLE notification_types;
+TRUNCATE TABLE attendances;
+TRUNCATE TABLE events;
+TRUNCATE TABLE posts;
+TRUNCATE TABLE post_statuses;
+TRUNCATE TABLE post_categories;
+TRUNCATE TABLE app_users;
+TRUNCATE TABLE user_statuses;
+TRUNCATE TABLE roles;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- Tabla de Roles
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL
 );
 
 -- Tabla de Estados de Usuarios
-CREATE TABLE user_statuses (
+CREATE TABLE IF NOT EXISTS user_statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     status_name VARCHAR(50) UNIQUE NOT NULL
 );
 
--- Tabla de Usuarios
-CREATE TABLE app_users (
+-- Tabla de Usuarios (renombrada a 'app_users')
+CREATE TABLE IF NOT EXISTS app_users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -43,19 +47,19 @@ CREATE TABLE app_users (
 );
 
 -- Tabla de Categorias de Publicaciones
-CREATE TABLE post_categories (
+CREATE TABLE IF NOT EXISTS post_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL
 );
 
 -- Tabla de Estados de Publicaciones
-CREATE TABLE post_statuses (
+CREATE TABLE IF NOT EXISTS post_statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
     status_name VARCHAR(50) UNIQUE NOT NULL
 );
 
 -- Tabla de Publicaciones
-CREATE TABLE posts (
+CREATE TABLE IF NOT EXISTS posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     category_id INT NOT NULL,
@@ -68,8 +72,8 @@ CREATE TABLE posts (
     FOREIGN KEY (status_id) REFERENCES post_statuses(id)
 );
 
--- Tabla de Eventos
-CREATE TABLE events (
+-- Tabla de Eventos con campos 'created_at' y 'deleted_at'
+CREATE TABLE IF NOT EXISTS events (
     id INT AUTO_INCREMENT PRIMARY KEY,
     post_id INT NOT NULL,
     event_date DATE NOT NULL,
@@ -85,7 +89,7 @@ CREATE TABLE events (
 );
 
 -- Tabla de Asistencias
-CREATE TABLE attendances (
+CREATE TABLE IF NOT EXISTS attendances (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     event_id INT NOT NULL,
@@ -94,13 +98,13 @@ CREATE TABLE attendances (
 );
 
 -- Tabla de Tipos de Notificaciones
-CREATE TABLE notification_types (
+CREATE TABLE IF NOT EXISTS notification_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     type_name VARCHAR(50) UNIQUE NOT NULL
 );
 
 -- Tabla de Notificaciones
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     post_id INT NOT NULL,
@@ -113,7 +117,7 @@ CREATE TABLE notifications (
 );
 
 -- Tabla de Reportes
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     post_id INT NOT NULL,
@@ -175,8 +179,9 @@ END //
 
 DELIMITER ;
 
--- Trigger para setear una publicacion como "Oculata" cuando tenga más de 3 reportes
+-- Trigger para setear una publicacion como "Oculta" cuando tenga más de 3 reportes
 DELIMITER //
+
 DROP TRIGGER IF EXISTS ban_post_if_reported;
 CREATE TRIGGER ban_post_if_reported
 AFTER INSERT ON reports
@@ -204,7 +209,6 @@ END //
 
 DELIMITER ;
 
-
 -- Vista para visualizar publicaciones reportadas
 CREATE OR REPLACE VIEW reported_posts AS
 SELECT
@@ -216,7 +220,7 @@ SELECT
 FROM
     posts p
 JOIN
-    app_users u ON p.user_id = u.id -- Cambiado a app_users
+    app_users u ON p.user_id = u.id
 WHERE
     p.reports_count > 0;
 
@@ -232,7 +236,9 @@ BEGIN
         e.event_date,
         e.event_time,
         e.location,
-        e.image_path
+        e.image_path,
+        e.created_at,
+        e.deleted_at
     FROM
         events e
     JOIN
@@ -257,4 +263,3 @@ INSERT INTO posts (user_id, category_id, title, description, status_id) VALUES
 INSERT INTO events (post_id, event_date, event_time, location, capacity, audience_type, url, image_path) VALUES
 (1, '2024-11-20', '18:00:00', 'Parque Central', 5000, 'Publico General', 'http://festivalmusica.com', 'event-images/eventoejemplouno.png'),
 (2, '2024-12-05', '09:00:00', 'Centro de Convenciones', 300, 'Profesionales', 'http://techtalks.com', 'event-images/eventoejemplodos.png');
-
