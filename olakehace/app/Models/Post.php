@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {
+    public $timestamps = false;
     protected $fillable = ['user_id', 'category_id', 'title', 'description', 'status_id', 'reports_count'];
-
+    
     public function user()
     {
         return $this->belongsTo(AppUser::class);
@@ -17,4 +18,5 @@ class Post extends Model
     {
         return $this->hasMany(Event::class);
     }
+
 }

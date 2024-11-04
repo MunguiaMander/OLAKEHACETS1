@@ -3,14 +3,24 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class AppUser extends Model
+class AppUser extends Authenticatable
 {
     protected $table = 'app_users';
-    protected $fillable = ['name', 'email', 'password', 'role_id', 'status_id', 'post_aprvd'];
 
-    public function posts()
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+        'role_id',
+        'status_id',
+        'post_aprvd', 
+    ];
+    public $timestamps = false; 
+
+    public function setPasswordAttribute($password)
     {
-        return $this->hasMany(Post::class);
+        $this->attributes['password'] = bcrypt($password);
     }
 }

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Event extends Model
 {
+
+    public $timestamps = false;
     protected $fillable = ['post_id', 'event_date', 'event_time', 'location', 'capacity', 'audience_type', 'url', 'image_path', 'status_id'];
 
     public function post()
